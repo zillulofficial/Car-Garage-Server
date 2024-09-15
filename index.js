@@ -45,6 +45,11 @@ const verifyToken= async(req, res, next)=>{
     next()
   })
 }
+const cookieOption= {
+  httpOnly: true,
+  sameSite: process.env.NODE_ENV=== "production" ? 'none': "strict",
+  secure: process.env.NODE_ENV=== "production" ? true: false
+}
 
 async function run() {
   try {
@@ -59,17 +64,13 @@ async function run() {
       const user= req.body
       const token =jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '3h'})
       res
-      .cookie('token', token, {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'none'
-      })
+      .cookie('token', token, cookieOption)
       .send({success: true})
     })
     app.post('/logout', async(req, res)=>{
       const user= req.body
       console.log('logged out user: ', user);
-      res.clearCookie('token', {maxAge: 0}).send({success: true})
+      res.clearCookie('token', {...cookieOption, maxAge: 0}).send({success: true})
     })
 
     // service related API
@@ -129,7 +130,7 @@ async function run() {
     })
 
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
